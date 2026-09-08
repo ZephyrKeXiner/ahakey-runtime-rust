@@ -21,12 +21,11 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
 
-    - name: upload artifacts
+    - name: Upload artifacts
       uses: actions/upload-artifact@v7
       with:
         name: ahakey-${{ runner.os }}-${{ runner.arch }}
         path: |
-          target/release/ahakey-runtime-rust
           target/release/ahakey-runtime-rust.exe
         if-no-files-found: error
         retention-days: 14
