@@ -1,10 +1,8 @@
 use std::error::Error;
 
 use btleplug::api::bleuuid::uuid_from_u16;
-use tokio::time::{sleep, Duration};
-use btleplug::platform::{Adapter, Manager, Peripheral};
-use btleplug::api::{self, Central, Manager as _, Peripheral as _, RetrievePeripheralsOptions, ScanFilter, CharPropFlags, WriteType};
-use futures_util::StreamExt;
+use btleplug::platform::{Manager};
+use btleplug::api::{Central, Manager as _, Peripheral as _, RetrievePeripheralsOptions};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -27,9 +25,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let Some(props) = peripheral.properties().await? else {
             continue;
         }; 
+
+        let name = props.local_name.unwrap_or_default();
+        let lower = name.to_lowercase();
+        if !lower.starts_with("ahakey") && !lower.starts_with("vibe code") {
+            continue;
+        }
+
+        println!("Connected to the device.");
+
+        println!("{:#?}", peripheral.properties().await.unwrap().unwrap());
     }
-
-
 
     Ok(())
 }
