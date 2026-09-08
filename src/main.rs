@@ -22,6 +22,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     ).await?;
 
     for peripheral in devices {
+        peripheral.connect().await?;
         let Some(props) = peripheral.properties().await? else {
             continue;
         }; 
