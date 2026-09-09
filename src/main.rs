@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::os::unix::process;
 
 use btleplug::api::bleuuid::uuid_from_u16;
 use btleplug::platform::{Manager, Peripheral};
@@ -32,8 +33,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         if !lower.starts_with("ahakey") && !lower.starts_with("vibe code") {
             continue;
         }
+        
+        println!("{:#?}", props);
     }
-    
 
     Ok(())
 }
