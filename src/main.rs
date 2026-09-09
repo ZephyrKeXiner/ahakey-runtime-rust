@@ -1,8 +1,12 @@
 use std::error::Error;
 
 use btleplug::api::bleuuid::uuid_from_u16;
-use btleplug::platform::{Manager};
+use btleplug::platform::{Manager, Peripheral};
 use btleplug::api::{Central, Manager as _, Peripheral as _, RetrievePeripheralsOptions};
+
+async fn find_device(device: Vec<Peripheral>) -> Result<Option<Peripheral>, Box<dyn Error>> {
+    Ok(None)
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -14,29 +18,22 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let devices = central.retrieve_peripherals(
         RetrievePeripheralsOptions {
             identifiers: None, 
-            services: Some(vec![
-                uuid_from_u16(0x7340),
-                uuid_from_u16(0x1812),
-            ])
+            services: None
         }
     ).await?;
 
     for peripheral in devices {
-        peripheral.connect().await?;
         let Some(props) = peripheral.properties().await? else {
             continue;
         }; 
 
-        let name = props.local_name.unwrap_or_default();
+        let name = props.local_name.as_deref().unwrap_or_default();
         let lower = name.to_lowercase();
         if !lower.starts_with("ahakey") && !lower.starts_with("vibe code") {
             continue;
         }
-
-        println!("Connected to the device.");
-
-        println!("{:#?}", peripheral.properties().await.unwrap().unwrap());
     }
+    
 
     Ok(())
 }
