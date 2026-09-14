@@ -1,10 +1,24 @@
 use std::error::Error;
 
-use btleplug::api::bleuuid::uuid_from_u16;
 use btleplug::platform::{Manager, Peripheral};
 use btleplug::api::{Central, Manager as _, Peripheral as _, RetrievePeripheralsOptions};
 
-async fn find_device(device: Vec<Peripheral>) -> Result<Option<Peripheral>, Box<dyn Error>> {
+async fn find_device(devices: Vec<Peripheral>) -> Result<Option<Peripheral>, Box<dyn Error>> {
+
+    for peripheral in devices {
+        let Some(props) = peripheral.properties().await? else {
+            continue;
+        };
+
+        let name = props.local_name.as_deref().unwrap_or_default();
+        let lower = name.to_lowercase();
+        if !lower.starts_with("ahakey") && !lower.starts_with("vibe code") {
+            continue;
+        }
+
+        println!("{:#?}", props);
+    }
+
     Ok(None)
 }
 
@@ -22,19 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     ).await?;
 
-    for peripheral in devices {
-        let Some(props) = peripheral.properties().await? else {
-            continue;
-        }; 
-
-        let name = props.local_name.as_deref().unwrap_or_default();
-        let lower = name.to_lowercase();
-        if !lower.starts_with("ahakey") && !lower.starts_with("vibe code") {
-            continue;
-        }
-
-        println!("{:#?}", props);
-    }
+    find_device(devices).await?;
 
     Ok(())
 }
