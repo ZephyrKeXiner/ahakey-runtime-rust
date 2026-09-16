@@ -2,7 +2,7 @@ use std::error::Error;
 
 use btleplug::api::bleuuid::uuid_from_u16;
 use btleplug::platform::{Manager, Peripheral};
-use btleplug::api::{Central, Characteristic, Manager as _, Peripheral as _, RetrievePeripheralsOptions};
+use btleplug::api::{Central, Manager as _, Peripheral as _, RetrievePeripheralsOptions};
 
 async fn find_device(devices: Vec<Peripheral>) -> Result<Option<Peripheral>, Box<dyn Error>> {
 
@@ -24,8 +24,24 @@ async fn find_device(devices: Vec<Peripheral>) -> Result<Option<Peripheral>, Box
     Ok(None)
 }
 
-async fn find_characteristic(peripheral: Option<&Peripheral>) {
+async fn find_characteristic(peripheral: Option<Peripheral>) -> Result<(), Box<dyn Error>> {
     let peripheral = peripheral.ok_or_else(|| btleplug::Error::DeviceNotFound)?;
+    peripheral.connect().await?;
+    peripheral.discover_services().await?;
+    for service in peripheral.services() {
+        println!(
+            "Service UUID: {}, Primary: {}",
+            service.uuid,
+            service.primary
+        );
+
+        for characteristic in service.characteristics {
+            println!("  Characteristic: UUID {}, Properties: {:?}", characteristic.uuid, characteristic.properties);
+        }
+    }
+
+    Ok(())
+    
 }
 
 #[tokio::main]
@@ -40,13 +56,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
             identifiers: None, 
             services: Some(vec![
                 uuid_from_u16(0x7340),
-                uuid_from_u16(0x7343),
-                uuid_from_u16(0x7344),
             ])
         }
     ).await?;
 
     let peripheral = find_device(devices).await?;
+    find_characteristic(peripheral).await?;
 
     Ok(())
 }
