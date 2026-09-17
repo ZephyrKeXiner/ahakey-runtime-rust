@@ -1,91 +1,11 @@
+mod device;
+use device::ble;
+
 use std::error::Error;
 
 use btleplug::api::bleuuid::uuid_from_u16;
-use btleplug::platform::{Manager, Peripheral};
-use btleplug::api::{Central, Manager as _, Peripheral as _, RetrievePeripheralsOptions, CharPropFlags};
-use futures_util::StreamExt;
-
-async fn find_device(devices: Vec<Peripheral>) -> Result<Option<Peripheral>, Box<dyn Error>> {
-    for peripheral in devices {
-        let Some(props) = peripheral.properties().await? else {
-            continue;
-        };
-
-        let name = props.local_name.as_deref().unwrap_or_default();
-        let lower = name.to_lowercase();
-        if !lower.starts_with("ahakey") && !lower.starts_with("vibe code") {
-            continue;
-        }
-
-        println!("{:#?}", props);
-        return Ok(Some(peripheral));
-    }
-
-    Ok(None)
-}
-
-async fn find_characteristic(peripheral: &Peripheral) -> Result<(), Box<dyn Error>> {
-    peripheral.connect().await?;
-    peripheral.discover_services().await?;
-    for service in peripheral.services() {
-        println!(
-            "Service UUID: {}, Primary: {}",
-            service.uuid,
-            service.primary
-        );
-
-        for characteristic in service.characteristics {
-            println!("  Characteristic: UUID {}, Properties: {:?}", characteristic.uuid, characteristic.properties);
-        }
-    }
-
-    Ok(())
-    
-}
-
-async fn read_from_char(peripheral: &Peripheral) -> Result<(), Box<dyn Error>> {
-    if let Some(characteristic) = peripheral.characteristics().into_iter().find(|c| c.properties.contains(CharPropFlags::READ)) {
-        let value  = peripheral.read(&characteristic).await?;
-        println!("Read value: {:?}", value);
-    } else {
-        return Err(btleplug::Error::PermissionDenied.into());
-    };
-
-    Ok(())
-}
-
-async fn write_to_char(peripheral: &Peripheral) -> Result<(), Box<dyn Error>> {
-    if let Some(characteristic) = peripheral.characteristics().into_iter().find(|c| c.uuid == uuid_from_u16(0x7343)) {
-        let data = [0xAA, 0xBB, 0x00, 0xCC, 0xDD];
-        peripheral.write(&characteristic, &data, btleplug::api::WriteType::WithResponse).await?;
-        println!("Wrote data successfully.");
-    };
-
-    Ok(())
-}
-
-async fn subscribe_to_notifications(peripheral: &Peripheral) -> Result<tokio::task::JoinHandle<()>, Box<dyn Error>> {
-    if let Some(characteristic) = peripheral.characteristics().into_iter().find(|c| c.uuid == uuid_from_u16(0x7344)) {
-        println!("Subscribing to characteristic {}", characteristic.uuid);
-        peripheral.subscribe(&characteristic).await?;
-
-        let mut notification_stream = peripheral.notifications().await?;
-        
-        let listener = tokio::spawn(async move {
-            while let Some(data) = notification_stream.next().await {
-                println!(
-                    "Received notification from UUID {}: {:?}",
-                    data.uuid,
-                    data.value
-                );
-            }       
-        }); 
-        Ok(listener)
-    } else {
-        Err(btleplug::Error::NotSupported("Failed to subscribe the characteristic".to_string()).into())
-    }
-    
-}
+use btleplug::platform::{ Manager };
+use btleplug::api::{ Central, Manager as _, RetrievePeripheralsOptions };
 
 
 #[tokio::main]
@@ -104,11 +24,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     ).await?;
 
-    let peripheral = find_device(devices).await?.unwrap();
-    find_characteristic(&peripheral).await?;
-    let listener = subscribe_to_notifications(&peripheral).await?;
+    let peripheral = ble::find_device(devices).await?.unwrap();
+    ble::find_characteristic(&peripheral).await?;
+    let listener = ble::subscribe_to_notifications(&peripheral).await?;
     // read_from_char(&peripheral).await?;
-    write_to_char(&peripheral).await?;
+    let data = [0xAA, 0xBB, 0x00, 0xCC, 0xDD];
+    ble::write_to_char(&peripheral, &data).await?;
 
     tokio::signal::ctrl_c().await?;
     listener.abort();
