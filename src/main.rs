@@ -1,6 +1,8 @@
 mod protocol;
 use protocol::ble;
 
+mod ahakey;
+
 use std::error::Error;
 
 use btleplug::api::bleuuid::uuid_from_u16;
