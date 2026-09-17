@@ -7,7 +7,6 @@ use btleplug::api::bleuuid::uuid_from_u16;
 use btleplug::platform::{ Manager };
 use btleplug::api::{ Central, Manager as _, RetrievePeripheralsOptions };
 
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let manager = Manager::new().await?;
@@ -26,10 +25,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let peripheral = ble::find_device(devices).await?.unwrap();
     ble::find_characteristic(&peripheral).await?;
-    let listener = ble::subscribe_to_notifications(&peripheral).await?;
+    let listener = ble::subscribe_to_notifications(&peripheral, 0x7344).await?;
     // read_from_char(&peripheral).await?;
     let data = [0xAA, 0xBB, 0x00, 0xCC, 0xDD];
-    ble::write_to_char(&peripheral, &data).await?;
+    ble::write_to_char(&peripheral, 0x7343, &data).await?;
 
     tokio::signal::ctrl_c().await?;
     listener.abort();

@@ -1,8 +1,9 @@
 use std::error::Error;
 
-use btleplug::api::bleuuid::uuid_from_u16;
+use btleplug::Error::Uuid;
+use btleplug::api::bleuuid::{ uuid_from_u16};
 use btleplug::platform::{ Peripheral };
-use btleplug::api::{ Peripheral as _, CharPropFlags };
+use btleplug::api::{ Peripheral as _ };
 use futures_util::StreamExt;
 
 pub(crate) async fn find_device(devices: Vec<Peripheral>) -> Result<Option<Peripheral>, Box<dyn Error>> {
@@ -43,8 +44,8 @@ pub(crate) async fn find_characteristic(peripheral: &Peripheral) -> Result<(), B
     
 }
 
-pub(crate) async fn read_from_char(peripheral: &Peripheral) -> Result<(), Box<dyn Error>> {
-    if let Some(characteristic) = peripheral.characteristics().into_iter().find(|c| c.properties.contains(CharPropFlags::READ)) {
+pub(crate) async fn read_from_char(peripheral: &Peripheral, characteristic_uuid: u16) -> Result<(), Box<dyn Error>> {
+    if let Some(characteristic) = peripheral.characteristics().into_iter().find(|c| c.uuid == uuid_from_u16(characteristic_uuid)) {
         let value  = peripheral.read(&characteristic).await?;
         println!("Read value: {:?}", value);
     } else {
@@ -54,8 +55,8 @@ pub(crate) async fn read_from_char(peripheral: &Peripheral) -> Result<(), Box<dy
     Ok(())
 }
 
-pub(crate) async fn write_to_char(peripheral: &Peripheral, data: &[u8]) -> Result<(), Box<dyn Error>> {
-    if let Some(characteristic) = peripheral.characteristics().into_iter().find(|c| c.uuid == uuid_from_u16(0x7343)) {
+pub(crate) async fn write_to_char(peripheral: &Peripheral, characteristic_uuid: u16, data: &[u8]) -> Result<(), Box<dyn Error>> {
+    if let Some(characteristic) = peripheral.characteristics().into_iter().find(|c| c.uuid == uuid_from_u16(characteristic_uuid)) {
         peripheral.write(&characteristic, &data, btleplug::api::WriteType::WithResponse).await?;
         println!("Wrote data successfully.");
     };
@@ -63,8 +64,8 @@ pub(crate) async fn write_to_char(peripheral: &Peripheral, data: &[u8]) -> Resul
     Ok(())
 }
 
-pub(crate) async fn subscribe_to_notifications(peripheral: &Peripheral) -> Result<tokio::task::JoinHandle<()>, Box<dyn Error>> {
-    if let Some(characteristic) = peripheral.characteristics().into_iter().find(|c| c.uuid == uuid_from_u16(0x7344)) {
+pub(crate) async fn subscribe_to_notifications(peripheral: &Peripheral, characteristic_uuid: u16) -> Result<tokio::task::JoinHandle<()>, Box<dyn Error>> {
+    if let Some(characteristic) = peripheral.characteristics().into_iter().find(|c| c.uuid == uuid_from_u16(characteristic_uuid)) {
         println!("Subscribing to characteristic {}", characteristic.uuid);
         peripheral.subscribe(&characteristic).await?;
 
