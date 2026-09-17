@@ -1,5 +1,5 @@
-mod device;
-use device::ble;
+mod protocol;
+use protocol::ble;
 
 use std::error::Error;
 

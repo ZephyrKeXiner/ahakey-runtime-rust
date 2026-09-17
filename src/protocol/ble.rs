@@ -1,6 +1,5 @@
 use std::error::Error;
 
-use btleplug::Error::Uuid;
 use btleplug::api::bleuuid::{ uuid_from_u16};
 use btleplug::platform::{ Peripheral };
 use btleplug::api::{ Peripheral as _ };
