@@ -2,6 +2,7 @@ mod protocol;
 use protocol::ble;
 
 mod ahakey;
+use ahakey::model_x1;
 
 use std::error::Error;
 
